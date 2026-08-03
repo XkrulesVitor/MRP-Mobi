@@ -1,4 +1,4 @@
-# 🚗 MRP Mobi - Landing Page de Indicação de Alta Conversão
+# MRP Mobi - Landing Page de Indicação de Alta Conversão
 
 > Landing Page premium desenvolvida no estilo **Startup Unicórnio** (inspirada em Stripe, Linear, Framer e Vercel) focada na conversão de cadastros e captação de usuários para a **MRP Mobi** através do link de indicação exclusivo.
 
