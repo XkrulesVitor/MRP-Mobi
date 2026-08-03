@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { CAROUSEL_SLIDES } from "@/lib/constants";
@@ -8,22 +8,41 @@ import CTAButton from "./ui/CTAButton";
 
 export default function FeaturesCarousel() {
   const [activeSlide, setActiveSlide] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Auto-play interval every 4.5 seconds
-  useEffect(() => {
-    const timer = setInterval(() => {
+  // Reset and restart the auto-play timer countdown
+  const startTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    timerRef.current = setInterval(() => {
       setActiveSlide((prev) => (prev + 1) % CAROUSEL_SLIDES.length);
     }, 4500);
-
-    return () => clearInterval(timer);
   }, []);
+
+  // Initialize auto-play timer on mount and cleanup on unmount
+  useEffect(() => {
+    startTimer();
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [startTimer]);
 
   const handleNext = () => {
     setActiveSlide((prev) => (prev + 1) % CAROUSEL_SLIDES.length);
+    startTimer(); // Reset countdown timer on manual click
   };
 
   const handlePrev = () => {
     setActiveSlide((prev) => (prev - 1 + CAROUSEL_SLIDES.length) % CAROUSEL_SLIDES.length);
+    startTimer(); // Reset countdown timer on manual click
+  };
+
+  const handleDotClick = (index: number) => {
+    setActiveSlide(index);
+    startTimer(); // Reset countdown timer on manual dot click
   };
 
   const currentItem = CAROUSEL_SLIDES[activeSlide];
@@ -94,7 +113,7 @@ export default function FeaturesCarousel() {
                     Destaque 0{activeSlide + 1} de 0{CAROUSEL_SLIDES.length}
                   </span>
 
-                  <h3 className="text-2xl sm:text-3xl font-extrabold text-white mb-4 leading-tight">
+                  <h3 className="text-2xl sm:text-3xl font-extrabold text-[#FFFFFF] mb-4 leading-tight">
                     {currentItem.title}
                   </h3>
 
@@ -115,7 +134,7 @@ export default function FeaturesCarousel() {
             {CAROUSEL_SLIDES.map((slide, idx) => (
               <button
                 key={idx}
-                onClick={() => setActiveSlide(idx)}
+                onClick={() => handleDotClick(idx)}
                 type="button"
                 className={`h-3 rounded-full transition-all duration-300 cursor-pointer ${
                   activeSlide === idx
