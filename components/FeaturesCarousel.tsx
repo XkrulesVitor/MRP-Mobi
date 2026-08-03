@@ -1,46 +1,52 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import useEmblaCarousel from "embla-carousel-react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { CAROUSEL_SLIDES } from "@/lib/constants";
 import CTAButton from "./ui/CTAButton";
 
 export default function FeaturesCarousel() {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, duration: 25 });
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
-  // Auto-play interval
+  const scrollPrev = useCallback(() => {
+    if (emblaApi) emblaApi.scrollPrev();
+  }, [emblaApi]);
+
+  const scrollNext = useCallback(() => {
+    if (emblaApi) emblaApi.scrollNext();
+  }, [emblaApi]);
+
+  const scrollTo = useCallback((index: number) => {
+    if (emblaApi) emblaApi.scrollTo(index);
+  }, [emblaApi]);
+
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setSelectedIndex(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
+
   useEffect(() => {
+    if (!emblaApi) return;
+    onSelect();
+    emblaApi.on("select", onSelect);
+    emblaApi.on("reInit", onSelect);
+
     const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % CAROUSEL_SLIDES.length);
+      if (emblaApi.canScrollNext()) {
+        emblaApi.scrollNext();
+      } else {
+        emblaApi.scrollTo(0);
+      }
     }, 4500);
 
-    return () => clearInterval(timer);
-  }, []);
-
-  const handleNext = (e?: React.MouseEvent) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    setCurrentIndex((prev) => (prev + 1) % CAROUSEL_SLIDES.length);
-  };
-
-  const handlePrev = (e?: React.MouseEvent) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    setCurrentIndex((prev) => (prev - 1 + CAROUSEL_SLIDES.length) % CAROUSEL_SLIDES.length);
-  };
-
-  const handleDotClick = (index: number, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setCurrentIndex(index);
-  };
-
-  const totalSlides = CAROUSEL_SLIDES.length;
+    return () => {
+      clearInterval(timer);
+      emblaApi.off("select", onSelect);
+    };
+  }, [emblaApi, onSelect]);
 
   return (
     <section className="relative py-12 bg-[#090A0F] overflow-hidden border-y border-white/5 z-20">
@@ -63,9 +69,9 @@ export default function FeaturesCarousel() {
           
           {/* Left Arrow Button */}
           <button
-            onClick={handlePrev}
+            onClick={scrollPrev}
             type="button"
-            className="absolute -left-3 sm:-left-6 top-1/2 -translate-y-1/2 z-50 p-3.5 sm:p-4 rounded-full bg-[#1F2233] hover:bg-[#FF6B00] text-white border-2 border-white/30 transition-all cursor-pointer shadow-2xl flex items-center justify-center active:scale-95 pointer-events-auto"
+            className="absolute -left-3 sm:-left-6 top-1/2 -translate-y-1/2 z-40 p-3.5 sm:p-4 rounded-full bg-[#1F2233] hover:bg-[#FF6B00] text-white border-2 border-white/30 transition-all cursor-pointer shadow-2xl flex items-center justify-center active:scale-95 pointer-events-auto"
             aria-label="Slide anterior"
           >
             <ChevronLeft className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
@@ -73,28 +79,21 @@ export default function FeaturesCarousel() {
 
           {/* Right Arrow Button */}
           <button
-            onClick={handleNext}
+            onClick={scrollNext}
             type="button"
-            className="absolute -right-3 sm:-right-6 top-1/2 -translate-y-1/2 z-50 p-3.5 sm:p-4 rounded-full bg-[#1F2233] hover:bg-[#FF6B00] text-white border-2 border-white/30 transition-all cursor-pointer shadow-2xl flex items-center justify-center active:scale-95 pointer-events-auto"
+            className="absolute -right-3 sm:-right-6 top-1/2 -translate-y-1/2 z-40 p-3.5 sm:p-4 rounded-full bg-[#1F2233] hover:bg-[#FF6B00] text-white border-2 border-white/30 transition-all cursor-pointer shadow-2xl flex items-center justify-center active:scale-95 pointer-events-auto"
             aria-label="Próximo slide"
           >
             <ChevronRight className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
           </button>
 
-          {/* CSS Transform Slide Track Window */}
-          <div className="overflow-hidden rounded-3xl border border-white/20 bg-[#121422] shadow-2xl">
-            <div
-              className="flex transition-transform duration-500 ease-out"
-              style={{
-                width: `${totalSlides * 100}%`,
-                transform: `translateX(-${(100 / totalSlides) * currentIndex}%)`,
-              }}
-            >
+          {/* Embla Viewport */}
+          <div className="overflow-hidden rounded-3xl border border-white/20 bg-[#121422] shadow-2xl" ref={emblaRef}>
+            <div className="flex">
               {CAROUSEL_SLIDES.map((slide, idx) => (
                 <div
                   key={idx}
-                  style={{ width: `${100 / totalSlides}%` }}
-                  className="p-6 sm:p-10 flex-shrink-0"
+                  className="flex-[0_0_100%] min-w-0 p-6 sm:p-10"
                 >
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
                     
@@ -117,7 +116,7 @@ export default function FeaturesCarousel() {
                     <div className="lg:col-span-5 flex flex-col justify-between h-full text-left">
                       <div>
                         <span className="text-xs font-bold text-[#FF852A] uppercase tracking-widest mb-2 block">
-                          Destaque 0{idx + 1} de 0{totalSlides}
+                          Destaque 0{idx + 1} de 0{CAROUSEL_SLIDES.length}
                         </span>
 
                         <h3 className="text-2xl sm:text-3xl font-extrabold text-white mb-4 leading-tight">
@@ -140,14 +139,14 @@ export default function FeaturesCarousel() {
           </div>
 
           {/* Interactive Pagination Dots */}
-          <div className="flex justify-center items-center gap-3 mt-6 relative z-50 pointer-events-auto">
+          <div className="flex justify-center items-center gap-3 mt-6 relative z-40">
             {CAROUSEL_SLIDES.map((_, idx) => (
               <button
                 key={idx}
-                onClick={(e) => handleDotClick(idx, e)}
+                onClick={() => scrollTo(idx)}
                 type="button"
                 className={`h-3 rounded-full transition-all duration-300 cursor-pointer pointer-events-auto ${
-                  currentIndex === idx
+                  selectedIndex === idx
                     ? "w-10 bg-[#FF6B00] shadow-lg shadow-[#FF6B00]/50"
                     : "w-3 bg-white/30 hover:bg-white/60"
                 }`}
